@@ -146,11 +146,259 @@ const NAV_ITEMS = [
 ];
 
 // ════════════════════════════════════════════════════════════════════════════
+// ONBOARDING WIZARD
+// ════════════════════════════════════════════════════════════════════════════
+function OnboardingWizard({ onComplete }) {
+  const [step, setStep] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const [data, setData] = useState({
+    name: "",
+    weight: "",
+    height: "",
+    goalWeight: "",
+    monthlyIncome: "",
+    monthlySavingsGoal: "",
+    currency: "S/",
+  });
+
+  const steps = [
+    {
+      id: "welcome",
+      icon: "⚡",
+      title: "Bienvenido a Life OS",
+      subtitle: "Tu sistema operativo personal. Vamos a configurarlo juntos en 3 pasos rápidos.",
+      color: THEME.accent1,
+      fields: [
+        { key: "name", label: "¿Cómo te llamas?", placeholder: "Tu nombre o apodo", type: "text", icon: "👤" },
+      ],
+    },
+    {
+      id: "body",
+      icon: "💪",
+      title: "Datos Físicos",
+      subtitle: "Esto nos permite calcular tu IMC y hacer seguimiento de tu progreso fitness.",
+      color: THEME.accent2,
+      fields: [
+        { key: "weight", label: "Peso actual (kg)", placeholder: "Ej: 78", type: "number", icon: "⚖️" },
+        { key: "height", label: "Estatura (cm)", placeholder: "Ej: 175", type: "number", icon: "📏" },
+        { key: "goalWeight", label: "Peso objetivo (kg)", placeholder: "Ej: 70", type: "number", icon: "🎯" },
+      ],
+    },
+    {
+      id: "economy",
+      icon: "💰",
+      title: "Situación Económica",
+      subtitle: "Establece tus metas financieras para hacer seguimiento de tu ahorro y gastos.",
+      color: THEME.accent3,
+      fields: [
+        { key: "monthlyIncome", label: "Ingreso mensual aproximado", placeholder: "Ej: 1500", type: "number", icon: "💵" },
+        { key: "monthlySavingsGoal", label: "Meta de ahorro mensual", placeholder: "Ej: 300", type: "number", icon: "🏦" },
+        { key: "currency", label: "Moneda", placeholder: "", type: "select", icon: "🌍", options: ["S/", "$", "€", "COP", "MXN"] },
+      ],
+    },
+    {
+      id: "ready",
+      icon: "🚀",
+      title: "¡Todo listo!",
+      subtitle: `Hola ${data.name || "campeón"}! Tu Life OS está configurado. ¡Empieza a conquistar tus metas!`,
+      color: THEME.gold,
+      fields: [],
+    },
+  ];
+
+  const currentStep = steps[step];
+  const isLast = step === steps.length - 1;
+
+  function canAdvance() {
+    if (step === 0) return data.name.trim().length > 0;
+    if (step === 1) return data.weight && data.height && data.goalWeight;
+    if (step === 2) return data.monthlyIncome && data.monthlySavingsGoal;
+    return true;
+  }
+
+  function goNext() {
+    if (!canAdvance() && !isLast) return;
+    if (isLast) {
+      onComplete({
+        name: data.name || "Usuario",
+        partner: "Pareja",
+        startWeight: parseFloat(data.weight) || 80,
+        goalWeight: parseFloat(data.goalWeight) || 70,
+        height: parseFloat(data.height) / 100 || 1.75,
+        monthlyIncome: parseFloat(data.monthlyIncome) || 0,
+        monthlySavingsGoal: parseFloat(data.monthlySavingsGoal) || 0,
+        currency: data.currency || "S/",
+      });
+      return;
+    }
+    setAnimating(true);
+    setTimeout(() => { setStep(s => s + 1); setAnimating(false); }, 300);
+  }
+
+  function goBack() {
+    if (step === 0) return;
+    setAnimating(true);
+    setTimeout(() => { setStep(s => s - 1); setAnimating(false); }, 300);
+  }
+
+  const overlayStyle = {
+    position: "fixed", inset: 0, zIndex: 9999,
+    background: `radial-gradient(ellipse at 30% 20%, ${THEME.accent1}22 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, ${currentStep.color}18 0%, transparent 60%), ${THEME.bg}`,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontFamily: "'Segoe UI', system-ui, sans-serif",
+    padding: 16,
+  };
+
+  const cardStyle = {
+    width: "100%", maxWidth: 480,
+    background: THEME.card,
+    border: `1px solid ${currentStep.color}44`,
+    borderRadius: 24,
+    padding: "36px 32px",
+    boxShadow: `0 0 60px ${currentStep.color}22, 0 24px 48px #00000066`,
+    opacity: animating ? 0 : 1,
+    transform: animating ? "translateY(12px)" : "translateY(0)",
+    transition: "opacity 0.3s ease, transform 0.3s ease",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    background: THEME.surface,
+    border: `1px solid ${THEME.border}`,
+    borderRadius: 10,
+    padding: "11px 14px",
+    color: THEME.text,
+    fontSize: 15,
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s",
+  };
+
+  return (
+    <div style={overlayStyle}>
+      <div style={cardStyle}>
+        {/* Progreso */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{
+              flex: 1, height: 4, borderRadius: 99,
+              background: i <= step ? currentStep.color : THEME.border,
+              transition: "background 0.4s ease",
+            }} />
+          ))}
+        </div>
+
+        {/* Ícono y título */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: "50%",
+            background: `linear-gradient(135deg, ${currentStep.color}33, ${currentStep.color}11)`,
+            border: `2px solid ${currentStep.color}66`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 34, margin: "0 auto 14px",
+            boxShadow: `0 0 24px ${currentStep.color}44`,
+          }}>
+            {currentStep.icon}
+          </div>
+          <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 900, color: THEME.text }}>
+            {currentStep.title}
+          </h2>
+          <p style={{ margin: 0, fontSize: 13, color: THEME.muted, lineHeight: 1.5 }}>
+            {step === 3 ? `¡Hola ${data.name || "campeón"}! Tu Life OS está configurado. ¡Empieza a conquistar tus metas!` : currentStep.subtitle}
+          </p>
+        </div>
+
+        {/* Campos */}
+        {currentStep.fields.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
+            {currentStep.fields.map(f => (
+              <div key={f.key}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: THEME.muted, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
+                  {f.icon} {f.label}
+                </label>
+                {f.type === "select" ? (
+                  <select
+                    value={data[f.key]}
+                    onChange={e => setData(d => ({ ...d, [f.key]: e.target.value }))}
+                    style={{ ...inputStyle, cursor: "pointer" }}
+                  >
+                    {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    id={`onboarding-${f.key}`}
+                    type={f.type}
+                    placeholder={f.placeholder}
+                    value={data[f.key]}
+                    onChange={e => setData(d => ({ ...d, [f.key]: e.target.value }))}
+                    onKeyDown={e => e.key === "Enter" && goNext()}
+                    style={inputStyle}
+                    autoFocus={f === currentStep.fields[0]}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Resumen en el paso final */}
+        {step === 3 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+            {[
+              { icon: "👤", label: "Nombre", value: data.name },
+              { icon: "⚖️", label: "Peso actual", value: `${data.weight} kg` },
+              { icon: "📏", label: "Estatura", value: `${data.height} cm` },
+              { icon: "🎯", label: "Peso objetivo", value: `${data.goalWeight} kg` },
+              { icon: "💵", label: "Ingreso mensual", value: `${data.currency} ${data.monthlyIncome}` },
+              { icon: "🏦", label: "Meta de ahorro", value: `${data.currency} ${data.monthlySavingsGoal}/mes` },
+            ].map(item => (
+              <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px", background: THEME.surface, borderRadius: 10, fontSize: 13 }}>
+                <span style={{ color: THEME.muted }}>{item.icon} {item.label}</span>
+                <span style={{ fontWeight: 700, color: THEME.text }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Botones */}
+        <div style={{ display: "flex", gap: 10 }}>
+          {step > 0 && step < 3 && (
+            <button
+              onClick={goBack}
+              style={{ flex: 1, background: THEME.surface, border: `1px solid ${THEME.border}`, borderRadius: 12, color: THEME.muted, padding: "12px", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.2s" }}
+            >
+              ← Atrás
+            </button>
+          )}
+          <button
+            id="onboarding-next-btn"
+            onClick={goNext}
+            disabled={!canAdvance() && !isLast}
+            style={{
+              flex: 2,
+              background: canAdvance() || isLast ? `linear-gradient(135deg, ${currentStep.color}, ${currentStep.color}bb)` : THEME.border,
+              border: "none", borderRadius: 12, color: canAdvance() || isLast ? "#fff" : THEME.muted,
+              padding: "13px", fontWeight: 800, cursor: canAdvance() || isLast ? "pointer" : "not-allowed",
+              fontSize: 15, letterSpacing: 0.5,
+              boxShadow: canAdvance() || isLast ? `0 4px 20px ${currentStep.color}44` : "none",
+              transition: "all 0.3s",
+            }}
+          >
+            {isLast ? "🚀 ¡Empezar Life OS!" : "Siguiente →"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // MAIN APP
 // ════════════════════════════════════════════════════════════════════════════
 export default function LifeOS() {
   const [tab, setTab] = useState("dashboard");
-  const [profile, saveProfile] = useStorage("life_profile", { name: "Usuario", partner: "Pareja", startWeight: 100, goalWeight: 82, height: 1.80 });
+  const [onboardingDone, saveOnboardingDone] = useStorage("life_onboarding_done", false);
+  const [profile, saveProfile] = useStorage("life_profile", { name: "Usuario", partner: "Pareja", startWeight: 100, goalWeight: 82, height: 1.80, monthlyIncome: 0, monthlySavingsGoal: 0, currency: "S/" });
   const [fitnessLog, saveFitness] = useStorage("life_fitness", []);
   const [financeLog, saveFinance] = useStorage("life_finance", []);
   const [habitsLog, saveHabits] = useStorage("life_habits", {});
@@ -160,6 +408,11 @@ export default function LifeOS() {
   const [totalXP, saveXP] = useStorage("life_xp", 0);
   const [unlockedAch, saveAch] = useStorage("life_ach", []);
   const [motivIdx] = useState(Math.floor(Math.random() * MOTIVATIONAL.length));
+
+  function handleOnboardingComplete(profileData) {
+    saveProfile({ ...profile, ...profileData });
+    saveOnboardingDone(true);
+  }
 
   const today = todayStr();
   const todayHabits = habitsLog[today] || {};
@@ -207,6 +460,7 @@ export default function LifeOS() {
 
   return (
     <div style={{ background: THEME.bg, minHeight: "100vh", fontFamily: "'Segoe UI', system-ui, sans-serif", color: THEME.text }}>
+      {!onboardingDone && <OnboardingWizard onComplete={handleOnboardingComplete} />}
       {/* Header */}
       <div style={{ background: `linear-gradient(135deg, ${THEME.surface} 0%, #0f0f1a 100%)`, borderBottom: `1px solid ${THEME.border}`, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(10px)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
